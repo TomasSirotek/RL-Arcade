@@ -1,4 +1,4 @@
-<img width="762" height="425" alt="Image" src="docs/images/banner.jpg" />
+![Image](docs/images/banner.jpg)
 
 # RL-Arcade
 
@@ -18,6 +18,9 @@ Hopefully this repo will help someone in same situation as Im/was. Thx. After cl
 - Issues and improvements are more than welcome.
 
 ---
+
+
+
 ## 1. Install
 
 Needs **Python 3.13 or newer** (this repo runs 3.14) and a CUDA GPU to be faast.
@@ -62,8 +65,10 @@ Check with `which python` — it should print an `env314` path. Or skip
 activation entirely and call the venv's Python directly:
 
 ```bash
-./env314/bin/python scripts/train.py
+python scripts/train.py
 ```
+
+
 
 ## 2. Run it
 
@@ -93,8 +98,9 @@ python scripts/train.py --cpus 4           # fewer parallel envs (less RAM)
 python scripts/train.py --timesteps 50000  # short run, to test changes
 python scripts/train.py --no-resume        # ignore the saved checkpoint, start fresh
 python scripts/play.py --fps 30            # play back faster
-python scripts/play.py --model logs/mario/run_20260101-120000/final_model.zip
 ```
+
+
 
 ### Resuming
 
@@ -102,8 +108,8 @@ python scripts/play.py --model logs/mario/run_20260101-120000/final_model.zip
 exists. That's usually what you want. Two things to know:
 
 - Changing hyperparameters in `config.py` and resuming does **not** fully apply
-  them — most values are baked into the `.zip`. Only `learning_rate` and
-  `target_kl` are overridden (see `resume_overrides()` in [config.py](config.py)).
+them — most values are baked into the `.zip`. Only `learning_rate` and
+`target_kl` are overridden (see `resume_overrides()` in [config.py](config.py)).
 - To genuinely start over, use `--no-resume`, or delete `logs/mario/best_model.zip`.
 
 Each run gets its own `logs/mario/run_<timestamp>/` folder, so restarting never
@@ -126,7 +132,7 @@ scripts/           thin CLIs you actually run
 docs/              README images and per-game docs
 ```
 
-The one rule: **`core/` never imports a game.** It receives a `GameSpec` as an
+The one rule: `core/` **never imports a game.** It receives a `GameSpec` as an
 argument. That's what makes a second game cost one file instead of a fork.
 
 ## 4. Adding a new game
@@ -175,44 +181,54 @@ You edit **nothing** in `core/`.
 
 ### What each GameSpec field means
 
-| field | what it's for |
-|---|---|
-| `name` | slug for `logs/<name>/` and `board/<name>/`. Keeps games from colliding. |
-| `env_id` | the id the game is registered under in Gymnasium |
-| `preprocess` | env → wrapped env. Owns everything game-specific. |
-| `progress_key` | `info[]` key `StallLimit` watches. Mario uses `x_pos`. |
-| `report_keys` | `info[]` keys printed after each episode during play |
-| `frame_stack` | frames stacked for motion. Must match between train and play. |
+
+| field          | what it's for                                                            |
+| -------------- | ------------------------------------------------------------------------ |
+| `name`         | slug for `logs/<name>/` and `board/<name>/`. Keeps games from colliding. |
+| `env_id`       | the id the game is registered under in Gymnasium                         |
+| `preprocess`   | env → wrapped env. Owns everything game-specific.                        |
+| `progress_key` | `info[]` key `StallLimit` watches. Mario uses `x_pos`.                   |
+| `report_keys`  | `info[]` keys printed after each episode during play                     |
+| `frame_stack`  | frames stacked for motion. Must match between train and play.            |
+
+
+
 
 ### Things to be aware of
 
-- **`preprocess` must be identical for training and play.** It is, because both
-  go through the same `SPEC` — but if you edit it after training, your saved
-  model sees a different observation than it learned on and plays like garbage.
-  Retrain after changing it.
-- **The action-space remap belongs in `preprocess`**, not in `core/`. Mario uses
-  `JoypadSpace` from nes-py, which only exists for NES games.
-- **Pick the right `progress_key`.** If the key never appears in `info`,
-  `StallLimit` sees no progress and truncates every episode at 80 steps.
-- **A `SPEC` per level.** Mario is `SuperMarioBros-1-1-v0` — level 1-1 only.
-  Other levels are separate `env_id`s, so give each its own `name` too.
+- `preprocess` **must be identical for training and play.** It is, because both
+go through the same `SPEC` — but if you edit it after training, your saved
+model sees a different observation than it learned on and plays like garbage.
+Retrain after changing it.
+- **The action-space remap belongs in** `preprocess`, not in `core/`. Mario uses
+`JoypadSpace` from nes-py, which only exists for NES games.
+- **Pick the right** `progress_key`**.** If the key never appears in `info`,
+`StallLimit` sees no progress and truncates every episode at 80 steps.
+- **A** `SPEC` **per level.** Mario is `SuperMarioBros-1-1-v0` — level 1-1 only.
+Other levels are separate `env_id`s, so give each its own `name` too.
+
+
 
 ## 5. Games
 
 - [Mario](games/mario/mario.md) — Super Mario Bros NES, reward function, preprocessing, gotchas.
 
+
+
 ## 6. Gotchas
 
 - **Ignore pre-2023 tutorials** showing `obs = env.reset()` or a 4-value `step()`.
-  That API is dead — `reset()` returns `(obs, info)` and `step()` returns 5 values.
-- **Ignore anything about gym-retro, `shimmy`, or `apply_api_compatibility`.**
-  Those were needed only on Python ≤3.12, where pip serves the 2021-era packages.
-  On 3.13+ you get the modern versions and none of it applies.
+That API is dead — `reset()` returns `(obs, info)` and `step()` returns 5 values.
+- **Ignore anything about gym-retro,** `shimmy`**, or** `apply_api_compatibility`**.**
+Those were needed only on Python ≤3.12, where pip serves the 2021-era packages.
+On 3.13+ you get the modern versions and none of it applies.
 - **Requires Python 3.13+.** On older Python, pip silently installs
-  gym-super-mario-bros 7.4.0 instead of 9.1.0 — that's the old-gym version that
-  needs all the shims. If you see `import gym` anywhere, you're on the old stack.
-- **`--cpus 10` is the default and it's hungry.** Each one is a full NES
-  emulator process. Drop to `--cpus 4` if you're short on RAM.
+gym-super-mario-bros 7.4.0 instead of 9.1.0 — that's the old-gym version that
+needs all the shims. If you see `import gym` anywhere, you're on the old stack.
+- `--cpus 10` **is the default and it's hungry.** Each one is a full NES
+emulator process. Drop to `--cpus 4` if you're short on RAM.
+
+
 
 ## Docs
 
@@ -220,3 +236,4 @@ You edit **nothing** in `core/`.
 - [gym-super-mario-bros](https://github.com/Kautenja/gym-super-mario-bros) — env ids, action sets
 - [SB3 RL Tips](https://stable-baselines3.readthedocs.io/en/master/guide/rl_tips.html) — why your agent isn't learning
 - Best reference is local: `env314/lib/python3.14/site-packages/gym_super_mario_bros/smb_env.py`
+

@@ -24,3 +24,6 @@ gym-super-mario-bros>=9.1,<10   # built on 9.1.0
 
 # Training curves:  tensorboard --logdir board/
 tensorboard>=2.19               # built on 2.21.0
+
+# ResizeObservation/GrayscaleObservation (used in preprocess()) need cv2.
+opencv-python>=4.9              # built on 5.0.0
