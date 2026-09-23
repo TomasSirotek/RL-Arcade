@@ -9,7 +9,7 @@ all the libraries were outdated as well so I decided to build it myself.
 
 - Made it with proper architecture so that the games are plug&play.
 - Currently ships [Super Mario Bros (NES)](docs/mario.md).
-- In-progress [SonicTheHedgehog-Genesis](docs/mario.md).
+- In-progress [SonicTheHedgehog-Genesis]().
 
 Hopefully this repo will help someone in same situation as Im/was. Thx. After clock project - SirTomas.
 
