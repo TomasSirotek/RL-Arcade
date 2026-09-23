@@ -29,10 +29,15 @@ fetches Python 3.14 and every dependency for you. A CUDA GPU makes it faast.
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh    # skip if you have uv
 
-git clone <this-repo> rl-arcade
+git clone --recursive https://github.com/TomasSirotek/RL-Arcade.git rl-arcade
 cd rl-arcade
 uv sync
 ```
+
+`--recursive` matters: the training engine is a separate library,
+[rlforge](https://github.com/TomasSirotek/rl-forge), included as a git submodule
+in `libs/rlforge/`. If you already cloned without it, run
+`git submodule update --init`.
 
 `uv sync` creates `.venv/` with the exact versions pinned in `uv.lock`, so every
 machine gets the same setup. There's no venv to activate: `uv run` always uses
@@ -45,7 +50,7 @@ uv run python -c "import torch; print('GPU:', torch.cuda.is_available())"
 ```
 
 If that prints `False` you'll train on CPU — it works, just slowly. Set
-`device="cpu"` in [config.py](config.py) to silence the warning. (On Linux the
+`device="cpu"` in `TrainConfig` ([libs/rlforge/src/rlforge/config.py](libs/rlforge/src/rlforge/config.py)) to silence the warning. (On Linux the
 PyPI torch wheel already includes CUDA. On Windows it's the CPU build.)
 
 The Mario ROM ships legally inside `gym-super-mario-bros`. Nothing to download.
@@ -80,7 +85,7 @@ after ~200k steps, something's wrong.
 ### Useful flags
 
 ```bash
-uv run scripts/train.py --game vizdoom      # pick a game (default: mario)
+uv run scripts/train.py --game mario       # pick a game (default: mario)
 uv run scripts/train.py --cpus 4           # fewer parallel envs (less RAM)
 uv run scripts/train.py --timesteps 50000  # short run, to test changes
 uv run scripts/train.py --no-resume        # ignore the saved checkpoint, start fresh
@@ -88,9 +93,9 @@ uv run scripts/play.py --fps 30            # play back faster
 uv run scripts/play.py --model logs/mario/run_20260101-120000/final_model.zip
 ```
 
-`uv sync` installs the repo itself into `.venv`, so `core`, `games` and
-`config` import from any file: `uv run games/vizdoom/test.py` works too. Run
-things from the repo root, because `logs/` and `board/` are relative paths.
+`uv sync` installs `rlforge` and `games` into `.venv`, so they import from any
+file, not just `scripts/`. Run things from the repo root, because `logs/` and
+`board/` are relative paths.
 
 
 
@@ -99,9 +104,10 @@ things from the repo root, because `logs/` and `board/` are relative paths.
 `scripts/train.py` **resumes automatically** if `logs/mario/best_model.zip`
 exists. That's usually what you want. Two things to know:
 
-- Changing hyperparameters in `config.py` and resuming does **not** fully apply
+- Changing hyperparameters in `TrainConfig` and resuming does **not** fully apply
 them — most values are baked into the `.zip`. Only `learning_rate` and
-`target_kl` are overridden (see `resume_overrides()` in [config.py](config.py)).
+`target_kl` are overridden (see `resume_overrides()` in
+[libs/rlforge/src/rlforge/config.py](libs/rlforge/src/rlforge/config.py)).
 - To genuinely start over, use `--no-resume`, or delete `logs/mario/best_model.zip`.
 
 Each run gets its own `logs/mario/run_<timestamp>/` folder, so restarting never
@@ -110,22 +116,37 @@ overwrites an old run's history.
 ## 3. How it's organised
 
 ```
-config.py          all hyperparameters, one place
-core/              the engine — knows nothing about any specific game
-├── spec.py        GameSpec: the "socket" a game plugs into
-├── vec.py         builds the parallel envs
-├── wrappers.py    StallLimit (ends an episode when the agent stops progressing)
-├── run_dirs.py    where logs and checkpoints go
-├── trainer.py     the PPO loop
-└── rollout.py     the watch-it-play loop
-games/             the plugs — one folder per game
-└── mario/game.py  the ONLY Mario-specific file
-scripts/           thin CLIs you actually run
-docs/              README images and per-game docs
+libs/rlforge/            the engine, a separate repo (git submodule)
+└── src/rlforge/
+    ├── spec.py          GameSpec: the "socket" a game plugs into
+    ├── config.py        TrainConfig + FRAME_SKIP, RESIZE, STALL_PATIENCE
+    ├── vec.py           builds the parallel envs
+    ├── wrappers.py      StallLimit (ends an episode when the agent stops progressing)
+    ├── run_dirs.py      where logs and checkpoints go
+    ├── trainer.py       the PPO loop
+    └── rollout.py       the watch-it-play loop
+games/                   the plugs — one folder per game
+├── base_games.py        env ids of the games
+└── mario/game.py        the ONLY Mario-specific file
+scripts/                 thin CLIs you actually run
+docs/                    README images and per-game docs
 ```
 
-The one rule: `core/` **never imports a game.** It receives a `GameSpec` as an
+The one rule: `rlforge` **never imports a game.** It receives a `GameSpec` as an
 argument. That's what makes a second game cost one file instead of a fork.
+
+### Working on rlforge
+
+`libs/rlforge/` is its own git repo. Changes you make there take effect in
+rl-arcade immediately. To save them:
+
+```bash
+cd libs/rlforge
+git switch main                # submodules start on no branch
+git commit -am "..." && git push
+cd ../..
+git add libs/rlforge && git commit -m "Bump rlforge"   # point rl-arcade at the new commit
+```
 
 ## 4. Adding a new game
 
@@ -142,9 +163,8 @@ a `SPEC`:
 
 ```python
 from gymnasium.wrappers import GrayscaleObservation, MaxAndSkipObservation, ResizeObservation
-from config import FRAME_SKIP, RESIZE, STALL_PATIENCE
-from core.spec import GameSpec
-from core.wrappers import StallLimit
+from rlforge import GameSpec, StallLimit
+from rlforge.config import FRAME_SKIP, RESIZE, STALL_PATIENCE
 
 def preprocess(env):
     # whatever your game needs: action-space remap, resize, grayscale, skip
@@ -169,7 +189,7 @@ uv run scripts/train.py --game sonic
 uv run scripts/play.py --game sonic
 ```
 
-You edit **nothing** in `core/`.
+You edit **nothing** in `rlforge`.
 
 ### What each GameSpec field means
 
@@ -192,7 +212,7 @@ You edit **nothing** in `core/`.
 go through the same `SPEC` — but if you edit it after training, your saved
 model sees a different observation than it learned on and plays like garbage.
 Retrain after changing it.
-- **The action-space remap belongs in** `preprocess`, not in `core/`. Mario uses
+- **The action-space remap belongs in** `preprocess`, not in `rlforge`. Mario uses
 `JoypadSpace` from nes-py, which only exists for NES games.
 - **Pick the right** `progress_key`**.** If the key never appears in `info`,
 `StallLimit` sees no progress and truncates every episode at 80 steps.
