@@ -33,7 +33,6 @@ __pycache__/
 !.env.example
 *.pem
 *.key
-.claude/settings.local.json
 
 # ---- Build / tool output ----
 dist/

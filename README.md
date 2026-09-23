@@ -8,8 +8,9 @@ I wanted to know a bit more about Reinforcement learning agents so I went to YT 
 all the libraries were outdated as well so I decided to build it myself.
 
 - Made it with proper architecture so that the games are plug&play.
+- The training engine is its own library: [rl-forge](https://github.com/TomasSirotek/rl-forge).
 - Currently ships [Super Mario Bros (NES)](docs/mario.md).
-- In-progress [SonicTheHedgehog-Genesis]().
+- In-progress [ViZDoom](https://vizdoom.farama.org/).
 
 Hopefully this repo will help someone in same situation as Im/was. Thx. After clock project - SirTomas.
 
@@ -131,6 +132,8 @@ games/                   the plugs — one folder per game
 scripts/                 thin CLIs you actually run
 docs/                    README images and per-game docs
 ```
+
+`libs/rlforge/` is [github.com/TomasSirotek/rl-forge](https://github.com/TomasSirotek/rl-forge).
 
 The one rule: `rlforge` **never imports a game.** It receives a `GameSpec` as an
 argument. That's what makes a second game cost one file instead of a fork.
