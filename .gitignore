@@ -1,0 +1,39 @@
+# ---- Trained artifacts: NEVER commit. Code only. ----
+# Checkpoints, tensorboard events, monitor csvs.
+logs/
+board/
+*.zip
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.monitor.csv
+events.out.tfevents.*
+runs/
+wandb/
+
+# ---- Virtualenv ----
+env314/
+.venv/
+venv/
+ENV/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# ---- Editors / OS ----
+.vscode/
+.idea/
+.vscode/settings.json
+.DS_Store
+Thumbs.db
+
+# ---- Local-only docs / older code ----
+TUTORIAL.md
+archive/

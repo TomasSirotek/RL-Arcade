@@ -1,0 +1,26 @@
+# Install with:  pip install -r requirements.txt
+#
+# Needs Python 3.13+. On older Python, pip silently serves the 2021-era
+# packages (gym-super-mario-bros 7.4.0) that need shimmy and the old gym.
+#
+# Ranges, not exact pins: you get bug fixes, but never a major version
+# that renames things underneath you. Versions this repo was built on
+# are noted at the end of each line.
+
+# Deep learning backend. For CUDA, install this FIRST from PyTorch's own
+# index, otherwise pip may give you the CPU-only build:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu124
+torch>=2.8,<3                   # built on 2.14.0
+
+# PPO and the vectorised-env plumbing. SB3 2.x requires torch>=2.8.
+stable-baselines3>=2.9,<3       # built on 2.9.0
+
+# The reset()/step() API. SB3 caps this below 2.0.
+gymnasium>=1.3,<2               # built on 1.3.0
+
+# The Mario ROM (shipped legally) + reward/info extraction from NES RAM.
+# Pulls in nes-py (the C++ emulator) automatically.
+gym-super-mario-bros>=9.1,<10   # built on 9.1.0
+
+# Training curves:  tensorboard --logdir board/
+tensorboard>=2.19               # built on 2.21.0
