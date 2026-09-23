@@ -1,14 +1,9 @@
 #!/usr/bin/env python
-"""Train a policy: python scripts/train.py --game mario"""
+"""Train a policy: uv run scripts/train.py --game mario"""
 
 import argparse
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-from config import TrainConfig
-from core import train
+from rlforge import TrainConfig, train
 import games
 
 

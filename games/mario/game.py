@@ -9,12 +9,10 @@ from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros  # noqa: F401  -- registers the gym ids
 from gym_super_mario_bros.actions import RIGHT_ONLY, COMPLEX_MOVEMENT, SIMPLE_MOVEMENT
 
-from config import FRAME_SKIP, RESIZE, STALL_PATIENCE
-from core.spec import GameSpec
-from core.wrappers import StallLimit
+from rlforge import GameSpec, StallLimit
+from rlforge.config import FRAME_SKIP, RESIZE, STALL_PATIENCE
 
-# "-v0" is the standard (unmodified, full-color) ROM variant of each game.
-ENV_ID = "SuperMarioBros-1-1-v0"
+from games.base_games import BaseGames
 
 
 def preprocess(env):
@@ -30,7 +28,7 @@ def preprocess(env):
 
 SPEC = GameSpec(
     name="mario",
-    env_id=ENV_ID,
+    env_id=BaseGames.SMB_L1_W1,
     preprocess=preprocess,
     progress_key="x_pos",
     report_keys=("x_pos", "flag_get"),

@@ -8,12 +8,14 @@ import gymnasium as gym
 from stable_baselines3.common.vec_env import (
     DummyVecEnv, SubprocVecEnv, VecFrameStack, VecMonitor, VecTransposeImage)
 
+from rlforge.render_modes import RenderModes
 
-def make_env(spec, rank=0, seed=0, render_mode="rgb_array"):
+
+def make_env(spec, rank=0, seed=0, render_mode= RenderModes.RGB_ARRAY, **make_kwargs):
     """One env, preprocessed. Returns a thunk -- SubprocVecEnv wants callables."""
     def _init():
         # render_mode='human' draws the game in a window instead of returning frames.
-        env = gym.make(spec.env_id, render_mode=render_mode)
+        env = gym.make(spec.env_id, render_mode=render_mode, **make_kwargs)
         # The spec owns the action remap + resize + grayscale + skip.
         env = spec.preprocess(env)
         env.reset(seed=seed + rank)
@@ -36,5 +38,6 @@ def build_vec_env(spec, num_cpu, monitor_path=None, seed=0):
 
 def build_play_env(spec, seed=0):
     """A single on-screen env for watching a trained policy."""
-    venv = DummyVecEnv([make_env(spec, 0, seed, render_mode="human")])
+    extra = {"screen_resolution": spec.screen_resolution} if spec.screen_resolution else {}
+    venv = DummyVecEnv([make_env(spec, 0, seed, render_mode= RenderModes.DISPLAY_WINDOW, **extra)])
     return _stack(venv, spec)

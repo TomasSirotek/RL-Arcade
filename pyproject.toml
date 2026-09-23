@@ -1,0 +1,30 @@
+[project]
+name = "rl-arcade"
+version = "0.1.0"
+description = "Reinforcement learning agents that play classic games. PPO via stable-baselines3, Gymnasium-native."
+readme = "README.md"
+# Older Python gets served the 2021-era gym-super-mario-bros that needs the old gym.
+requires-python = ">=3.13"
+dependencies = [
+    # The engine: GameSpec, wrappers, train(), play(). Lives in libs/rlforge.
+    "rlforge[tensorboard]",
+    # On Linux the PyPI wheel already bundles CUDA.
+    "torch>=2.8,<3",
+    # Mario ROM ships legally inside; pulls in nes-py.
+    "gym-super-mario-bros>=9.1,<10",
+    "vizdoom>=1.3,<2",
+]
+
+[tool.uv.workspace]
+members = ["libs/*"]
+
+[tool.uv.sources]
+rlforge = { workspace = true }
+
+# Installs `games` into .venv (editable), so it imports from any file you run.
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+only-include = ["games"]

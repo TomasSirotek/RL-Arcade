@@ -23,69 +23,55 @@ Hopefully this repo will help someone in same situation as Im/was. Thx. After cl
 
 ## 1. Install
 
-Needs **Python 3.13 or newer** (this repo runs 3.14) and a CUDA GPU to be faast.
+The only thing you install yourself is [uv](https://docs.astral.sh/uv/). It
+fetches Python 3.14 and every dependency for you. A CUDA GPU makes it faast.
 
 ```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh    # skip if you have uv
+
 git clone <this-repo> rl-arcade
 cd rl-arcade
-
-python3.14 -m venv env314          # any 3.13+ works
-source env314/bin/activate
-
-# CUDA build of torch first -- otherwise pip gives you the CPU-only one
-pip install torch --index-url https://download.pytorch.org/whl/cu124
-
-pip install -r requirements.txt
+uv sync
 ```
 
-[requirements.txt](requirements.txt) pins the versions this was built on. If
-you don't have an NVIDIA GPU, skip the torch line — `requirements.txt` will
-install the CPU build for you.
+`uv sync` creates `.venv/` with the exact versions pinned in `uv.lock`, so every
+machine gets the same setup. There's no venv to activate: `uv run` always uses
+this project's environment.
 
 Check it worked:
 
 ```bash
-python -c "import torch; print('GPU:', torch.cuda.is_available())"
+uv run python -c "import torch; print('GPU:', torch.cuda.is_available())"
 ```
 
 If that prints `False` you'll train on CPU — it works, just slowly. Set
-`device="cpu"` in [config.py](config.py) to silence the warning.
+`device="cpu"` in [config.py](config.py) to silence the warning. (On Linux the
+PyPI torch wheel already includes CUDA. On Windows it's the CPU build.)
 
 The Mario ROM ships legally inside `gym-super-mario-bros`. Nothing to download.
 
-### Activating
-
-**Activation dies with the terminal.** Every new terminal needs it again:
-
-```bash
-source env314/bin/activate     # prompt shows (env314)
-```
-
-Check with `which python` — it should print an `env314` path. Or skip
-activation entirely and call the venv's Python directly:
-
-```bash
-python scripts/train.py
-```
-
-
-
 ## 2. Run it
-
-Three commands, in the order you'd actually use them:
 
 ```bash
 # 1. Train. Writes to logs/mario/ and board/mario/.
-python scripts/train.py
+uv run scripts/train.py
 
-# 2. Watch what it learned.
-python scripts/play.py
+# 2. Watch it play.
+uv run scripts/play.py
 ```
+
+`play.py` picks the best model it can find:
+
+1. `logs/<game>/best_model.zip` — saved by the evaluator whenever the score improves
+2. otherwise the newest `logs/<game>/run_*/final_model.zip`
+3. otherwise **random actions**, so you can see the game before training anything
+
+It prints which one it's using when it starts.
 
 Watch it learn, in another terminal:
 
 ```bash
-tensorboard --logdir board/
+uv run tensorboard --logdir board/
 ```
 
 The number to watch is `rollout/ep_rew_mean`. It should climb. If it's flat
@@ -94,11 +80,17 @@ after ~200k steps, something's wrong.
 ### Useful flags
 
 ```bash
-python scripts/train.py --cpus 4           # fewer parallel envs (less RAM)
-python scripts/train.py --timesteps 50000  # short run, to test changes
-python scripts/train.py --no-resume        # ignore the saved checkpoint, start fresh
-python scripts/play.py --fps 30            # play back faster
+uv run scripts/train.py --game vizdoom      # pick a game (default: mario)
+uv run scripts/train.py --cpus 4           # fewer parallel envs (less RAM)
+uv run scripts/train.py --timesteps 50000  # short run, to test changes
+uv run scripts/train.py --no-resume        # ignore the saved checkpoint, start fresh
+uv run scripts/play.py --fps 30            # play back faster
+uv run scripts/play.py --model logs/mario/run_20260101-120000/final_model.zip
 ```
+
+`uv sync` installs the repo itself into `.venv`, so `core`, `games` and
+`config` import from any file: `uv run games/vizdoom/test.py` works too. Run
+things from the repo root, because `logs/` and `board/` are relative paths.
 
 
 
@@ -173,8 +165,8 @@ SPEC = GameSpec(
 That's it. `--game sonic` now appears in both CLIs automatically:
 
 ```bash
-python scripts/train.py --game sonic
-python scripts/play.py --game sonic
+uv run scripts/train.py --game sonic
+uv run scripts/play.py --game sonic
 ```
 
 You edit **nothing** in `core/`.
@@ -235,5 +227,5 @@ emulator process. Drop to `--cpus 4` if you're short on RAM.
 - [Gymnasium](https://gymnasium.farama.org/) — the core API
 - [gym-super-mario-bros](https://github.com/Kautenja/gym-super-mario-bros) — env ids, action sets
 - [SB3 RL Tips](https://stable-baselines3.readthedocs.io/en/master/guide/rl_tips.html) — why your agent isn't learning
-- Best reference is local: `env314/lib/python3.14/site-packages/gym_super_mario_bros/smb_env.py`
+- Best reference is local: `.venv/lib/python3.14/site-packages/gym_super_mario_bros/smb_env.py`
 

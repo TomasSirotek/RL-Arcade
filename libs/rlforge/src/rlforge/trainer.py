@@ -2,9 +2,9 @@ import os
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 
-from config import TrainConfig
-from core.run_dirs import board_dir, make_run_dir, resume_from
-from core.vec import build_vec_env
+from rlforge.config import TrainConfig
+from rlforge.run_dirs import board_dir, make_run_dir, resume_from
+from rlforge.vec import build_vec_env
 
 
 def build_model(spec, vec_env, cfg, resume_path):

@@ -1,3 +1,4 @@
+import glob
 import os
 import time
 
@@ -16,6 +17,15 @@ def make_run_dir(game_name):
 
 def best_model_path(game_name):
     return os.path.join("logs", game_name, "best_model.zip")
+
+
+def latest_model(game_name):
+    """best_model.zip, else the newest run's final_model.zip, else None."""
+    best = best_model_path(game_name)
+    if os.path.exists(best):
+        return best
+    finals = sorted(glob.glob(os.path.join("logs", game_name, "run_*", "final_model.zip")))
+    return finals[-1] if finals else None
 
 
 def resume_from(game_name, resume=True):

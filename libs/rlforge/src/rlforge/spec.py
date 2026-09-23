@@ -30,3 +30,9 @@ class GameSpec:
     # How many frames the policy stacks to perceive motion. Must match
     # between training and play or the loaded model sees the wrong shape.
     frame_stack: int = 4
+
+    # Window size when watching with play(), e.g. "RES_1280X720". A game may
+    # pass its own StrEnum here -- a StrEnum is a str.
+    # None = the game's own default. Only passed to envs that accept it, and
+    # training ignores it -- frames get resized to RESIZE either way.
+    screen_resolution: str | None = None

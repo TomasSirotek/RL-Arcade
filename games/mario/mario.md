@@ -9,8 +9,8 @@ The learning is PPO [stable-baselines3](https://stable-baselines3.readthedocs.io
 ## Run it
 
 ```bash
-python scripts/train.py --game mario
-python scripts/play.py --game mario
+uv run scripts/train.py --game mario
+uv run scripts/play.py --game mario
 ```
 
 See the [main README](../../README.md) for install, architecture, and how to add a new game.
