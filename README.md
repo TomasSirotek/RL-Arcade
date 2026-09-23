@@ -23,7 +23,7 @@ Hopefully this repo will help someone in same situation as Im/was. Thx. After cl
 
 
 ## 1. Install
-
+---
 The only thing you install yourself is [uv](https://docs.astral.sh/uv/). It
 fetches Python 3.14 and every dependency for you. A CUDA GPU makes it faast.
 
@@ -57,7 +57,7 @@ PyPI torch wheel already includes CUDA. On Windows it's the CPU build.)
 The Mario ROM ships legally inside `gym-super-mario-bros`. Nothing to download.
 
 ## 2. Run it
-
+---
 ```bash
 # 1. Train. Writes to logs/mario/ and board/mario/.
 uv run scripts/train.py
@@ -84,7 +84,7 @@ The number to watch is `rollout/ep_rew_mean`. It should climb. If it's flat
 after ~200k steps, something's wrong.
 
 ### Useful flags
-
+---
 ```bash
 uv run scripts/train.py --game mario       # pick a game (default: mario)
 uv run scripts/train.py --cpus 4           # fewer parallel envs (less RAM)
@@ -101,7 +101,7 @@ file, not just `scripts/`. Run things from the repo root, because `logs/` and
 
 
 ### Resuming
-
+---
 `scripts/train.py` **resumes automatically** if `logs/mario/best_model.zip`
 exists. That's usually what you want. Two things to know:
 
@@ -115,14 +115,15 @@ Each run gets its own `logs/mario/run_<timestamp>/` folder, so restarting never
 overwrites an old run's history.
 
 ## 3. How it's organised
-
+---
 ```
 libs/rlforge/            the engine, a separate repo (git submodule)
 └── src/rlforge/
     ├── spec.py          GameSpec: the "socket" a game plugs into
     ├── config.py        TrainConfig + FRAME_SKIP, RESIZE, STALL_PATIENCE
     ├── vec.py           builds the parallel envs
-    ├── wrappers.py      StallLimit (ends an episode when the agent stops progressing)
+    ├── preprocessing.py pixel_pipeline: frame skip → resize → grayscale
+    ├── wrappers.py      StallLimit (ends a stuck episode), SelectKey (dict observations)
     ├── run_dirs.py      where logs and checkpoints go
     ├── trainer.py       the PPO loop
     └── rollout.py       the watch-it-play loop
@@ -139,7 +140,7 @@ The one rule: `rlforge` **never imports a game.** It receives a `GameSpec` as an
 argument. That's what makes a second game cost one file instead of a fork.
 
 ### Working on rlforge
-
+---
 `libs/rlforge/` is its own git repo. Changes you make there take effect in
 rl-arcade immediately. To save them:
 
@@ -152,7 +153,7 @@ git add libs/rlforge && git commit -m "Bump rlforge"   # point rl-arcade at the 
 ```
 
 ## 4. Adding a new game
-
+---
 Say you want Sonic. Make one folder, one file:
 
 ```
@@ -165,16 +166,13 @@ games/sonic/
 a `SPEC`:
 
 ```python
-from gymnasium.wrappers import GrayscaleObservation, MaxAndSkipObservation, ResizeObservation
-from rlforge import GameSpec, StallLimit
-from rlforge.config import FRAME_SKIP, RESIZE, STALL_PATIENCE
+from rlforge import GameSpec, StallLimit, pixel_pipeline
+from rlforge.config import STALL_PATIENCE
 
 def preprocess(env):
-    # whatever your game needs: action-space remap, resize, grayscale, skip
-    env = MaxAndSkipObservation(env, skip=FRAME_SKIP)
-    env = StallLimit(env, patience=STALL_PATIENCE, progress_key="x")
-    env = ResizeObservation(env, RESIZE)
-    return GrayscaleObservation(env, keep_dim=True)
+    # game-specific steps first (controls remap, SelectKey for dict observations)
+    env = pixel_pipeline(env)                  # frame skip -> resize 84x84 -> grayscale
+    return StallLimit(env, patience=STALL_PATIENCE, progress_key="x")
 
 SPEC = GameSpec(
     name="sonic",              # -> logs/sonic/, board/sonic/
@@ -195,7 +193,7 @@ uv run scripts/play.py --game sonic
 You edit **nothing** in `rlforge`.
 
 ### What each GameSpec field means
-
+---
 
 | field          | what it's for                                                            |
 | -------------- | ------------------------------------------------------------------------ |
@@ -210,7 +208,7 @@ You edit **nothing** in `rlforge`.
 
 
 ### Things to be aware of
-
+---
 - `preprocess` **must be identical for training and play.** It is, because both
 go through the same `SPEC` — but if you edit it after training, your saved
 model sees a different observation than it learned on and plays like garbage.
@@ -225,13 +223,13 @@ Other levels are separate `env_id`s, so give each its own `name` too.
 
 
 ## 5. Games
-
+---
 - [Mario](games/mario/mario.md) — Super Mario Bros NES, reward function, preprocessing, gotchas.
 
 
 
 ## 6. Gotchas
-
+---
 - **Ignore pre-2023 tutorials** showing `obs = env.reset()` or a 4-value `step()`.
 That API is dead — `reset()` returns `(obs, info)` and `step()` returns 5 values.
 - **Ignore anything about gym-retro,** `shimmy`**, or** `apply_api_compatibility`**.**
@@ -246,7 +244,7 @@ emulator process. Drop to `--cpus 4` if you're short on RAM.
 
 
 ## Docs
-
+---
 - [Gymnasium](https://gymnasium.farama.org/) — the core API
 - [gym-super-mario-bros](https://github.com/Kautenja/gym-super-mario-bros) — env ids, action sets
 - [SB3 RL Tips](https://stable-baselines3.readthedocs.io/en/master/guide/rl_tips.html) — why your agent isn't learning

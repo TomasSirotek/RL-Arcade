@@ -3,28 +3,18 @@
 Copy this file to add a game. Nothing in core/ needs to change.
 """
 
-from gymnasium.wrappers import (
-    GrayscaleObservation, MaxAndSkipObservation, ResizeObservation)
 from nes_py.wrappers import JoypadSpace
-import gym_super_mario_bros  # noqa: F401  -- registers the gym ids
 from gym_super_mario_bros.actions import RIGHT_ONLY, COMPLEX_MOVEMENT, SIMPLE_MOVEMENT
-
-from rlforge import GameSpec, StallLimit
-from rlforge.config import FRAME_SKIP, RESIZE, STALL_PATIENCE
-
+from rlforge import GameSpec, StallLimit, pixel_pipeline
+from rlforge.config import STALL_PATIENCE
 from games.base_games import BaseGames
+from games.vizdoom.play_option import PlayOptions
 
 
 def preprocess(env):
-    # JoypadSpace maps the 256 raw NES button combinations down to 5
-    # (noop, right, right+A, right+B, right+A+B). Must match between
-    # training and play or the loaded policy's action ids mean nothing.
-    env = JoypadSpace(env, RIGHT_ONLY)
-    env = MaxAndSkipObservation(env, skip=FRAME_SKIP)  # How often agents decide? (4x fewer)
-    env = StallLimit(env, patience=STALL_PATIENCE)     # Outside skip, so patience counts agent steps
-    env = ResizeObservation(env, RESIZE)               # How much detail? (9x fewer)
-    return GrayscaleObservation(env, keep_dim=True)    # Does color matter? (3x less data)
-
+    env = JoypadSpace(env, RIGHT_ONLY)             # 256 NES button combos -> 5 actions
+    env = pixel_pipeline(env)                      # skip 4 frames, resize to 84x84, grayscale
+    return StallLimit(env, patience=STALL_PATIENCE)  # outside skip, so patience counts agent steps
 
 SPEC = GameSpec(
     name="mario",
